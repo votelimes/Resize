@@ -46,7 +46,7 @@ class Resizer:
             elif re.search(r"^(?:exit|quit)$", x, re.IGNORECASE):
                 quit()
             else:
-                self.__images_folders_paths(x)
+                self.__images_folders_paths.append(x)
         for x in self.__images_objects_paths:
             self.__resize_images(x, self.__final_resolution)
         for x in self.__images_folders_paths:
@@ -75,7 +75,15 @@ class Resizer:
 
     def __resize_folders_images(self, folder_path, image_resolution):
 
-        pass
+        listdir = os.listdir(folder_path)
+        images = []
+        pattern = r"[\w\s]+.(?:{0})"
+        pattern = pattern.format(self.__acceptable_file_extensions)
+        for file in listdir:
+            if re.search(pattern, listdir):
+                images.append(os.path.join(folder_path, file))
+
+        return 0
 
     def __print_help(self):
         print("""Use: path(one or more) [-ir [dec] [dec]] 
