@@ -7,6 +7,9 @@ import fnmatch
 
 class Resizer:
     def __init__(self):
+        self.__errors_list = {"error_1": "The path to the file / folder is specified incorrectly.",
+                              "error_2": "Error 2. Final resolution must be entered.",
+                              }
         self.__images_folders_paths = []
         self.__images_objects_paths = []
         self.__final_resolution = None
@@ -18,8 +21,20 @@ class Resizer:
     def __console(self):
         self.__fm = False
         input_string = input(": ")
-        #input_string = "r://test1.txt      r://test2.txt -ir 100x200 "
-        #input_string = "r:/test1.jpg -ir 400x400"
+        #input_string = "r://test1.txt      r://test2.txt  -ir 100 200"
+
+        # get -ir key from input
+        ir_pattern = r"-ir \d+ ?\D ?\d+"
+        ir_data = re.findall(ir_pattern, input_string)
+        if not ir_data:
+            print(self.__errors_list["error_2"])
+            return 2
+        # get -ir values
+        self.__final_resolution = tuple(map(int, re.findall(r"\d+", ir_data[0], re.IGNORECASE)))
+
+        # delete -ir key from input_string
+        input_string = re.sub(ir_pattern, "", input_string, re.IGNORECASE)
+
         pattern = r"(?:[a-zA-Z]:[\\\/])?(?:[\\\/]?[\w -]+)*(?:\.(?:{0}))?(?:\n| |$|\Z|\|)"
         pattern = pattern.format(self.__acceptable_file_extensions)
 
@@ -37,9 +52,6 @@ class Resizer:
             if re.search(file_pattern, x, re.IGNORECASE):
                 self.__images_objects_paths.append(x)
 
-            elif re.search(r"^-ir \d+ ?\D ?\d+$", x, re.IGNORECASE):
-                self.__final_resolution = tuple(map(int, re.findall(r"\d+", x, re.IGNORECASE)))
-                self.__fm = True
             elif re.search(r"^help$", x, re.IGNORECASE):
                 self.__print_help()
                 return 1
@@ -80,9 +92,10 @@ class Resizer:
         pattern = r"[\w\s]+.(?:{0})"
         pattern = pattern.format(self.__acceptable_file_extensions)
         for file in listdir:
-            if re.search(pattern, listdir):
+            if re.search(pattern, file):
                 images.append(os.path.join(folder_path, file))
-
+        for image in images:
+            self.__resize_images(image, self.__final_resolution)
         return 0
 
     def __print_help(self):
