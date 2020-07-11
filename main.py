@@ -23,12 +23,21 @@ class Resizer:
         input_string = input(": ")
         #input_string = "r://test1.txt      r://test2.txt  -ir 100 200"
 
+        # try to get exit/quit key
+        if re.search(r"(?:^| |\n|-)(?:exit|quit)(?:|\n|$)", input_string, re.IGNORECASE):
+            quit()
+
+        # try to get help key
+        if re.search(r"(?:^| |\n|-)(?:help|\?)(?:|\n|$)", input_string, re.IGNORECASE):
+            self.__print_help()
+            return 1
+
         # get -ir key from input
         ir_pattern = r"-ir \d+ ?\D ?\d+"
         ir_data = re.findall(ir_pattern, input_string)
         if not ir_data:
             print(self.__errors_list["error_2"])
-            return 2
+            return -2
         # get -ir values
         self.__final_resolution = tuple(map(int, re.findall(r"\d+", ir_data[0], re.IGNORECASE)))
 
@@ -52,17 +61,18 @@ class Resizer:
             if re.search(file_pattern, x, re.IGNORECASE):
                 self.__images_objects_paths.append(x)
 
-            elif re.search(r"^help$", x, re.IGNORECASE):
-                self.__print_help()
-                return 1
-            elif re.search(r"^(?:exit|quit)$", x, re.IGNORECASE):
-                quit()
             else:
                 self.__images_folders_paths.append(x)
+
+        # process all images
         for x in self.__images_objects_paths:
             self.__resize_images(x, self.__final_resolution)
+
+        # process all folders
         for x in self.__images_folders_paths:
             self.__resize_folders_images(x, self.__final_resolution)
+
+        # debug
         input()
 
     def start_console_listen(self):
