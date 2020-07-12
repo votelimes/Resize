@@ -3,7 +3,8 @@ import threading
 import os
 import re
 import fnmatch
-
+import getopt
+import sys
 
 class Resizer:
     def __init__(self):
@@ -20,8 +21,12 @@ class Resizer:
 
     def __console(self):
         self.__fm = False
-        input_string = input(": ")
-        #input_string = "r://test1.txt      r://test2.txt  -ir 100 200"
+        if len(sys.argv) == 1:
+            input_string = input(": ")
+        else:
+            separator = " "
+            input_string = separator.join(sys.argv[1:])
+        #input_string = "r://test1.txt      r://test2.txt  -ir 100 200" # debug
 
         # try to get exit/quit key
         if re.search(r"(?:^| |\n|-)(?:exit|quit)(?:|\n|$)", input_string, re.IGNORECASE):
@@ -75,9 +80,11 @@ class Resizer:
         # debug
         input()
 
-    def start_console_listen(self):
-        while(True):
+    def start_console_listen(self, infinite=True):
+        while True:
             self.__console()
+            if not infinite:
+                break
 
     def __resize_images(self, image_path, image_resolution):
         image = Image.open(image_path)
@@ -119,7 +126,7 @@ class Resizer:
 
 # main code part
 resizer = Resizer()
-resizer.start_console_listen()
-#image = Image.open("R:\\test1.jpg")
-#image = image.resize((400, 100), Image.ANTIALIAS)
-#image.save("R:\\test2.png", "PNG")
+if len(sys.argv) == 1:
+    resizer.start_console_listen()
+else:
+    resizer.start_console_listen(False)
