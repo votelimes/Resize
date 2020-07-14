@@ -38,14 +38,13 @@ class Resizer:
         # try to get help key
         if re.search(r"(?:^| |\n|-)(?:help|\?)(?:|\n|$)", input_string, re.IGNORECASE):
             self.__print_help()
-            return 1
+            return 0
 
         # get -r (resolution) key from input
         ir_pattern = r"-r \d+ ?\D ?\d+"
         ir_data = re.findall(ir_pattern, input_string)
         if not ir_data:
-            print(self.__errors_list["error_2"])
-            return -2
+            return "error_2"
         # get -r values
         self.__final_resolution = tuple(map(int, re.findall(r"\d+", ir_data[0], re.IGNORECASE)))
 
@@ -95,7 +94,12 @@ class Resizer:
 
     def start_console_listen(self, infinite=True):
         while True:
-            self.__console()
+            log = self.__console()
+            if log is not 0:
+                try:
+                    print(self.__errors_list[log])
+                except IndexError:
+                    print("Unknown error. Try again.")
             if not infinite:
                 break
 
