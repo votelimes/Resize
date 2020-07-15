@@ -27,12 +27,12 @@ class Resizer:
         self.__postfix = None
         self.__new_folder = None
         if len(sys.argv) == 1:
-            #input_string = input(": ")
+            input_string = input(": ")
             pass # debug
         else:
             separator = " "
             input_string = separator.join(sys.argv[1:])
-        input_string = "r://test1.txt -r 100 200 -nf r://folder2 -p .png" # debug
+        #input_string = "r://test1.txt -r 100 200 -nf r://folder2 -p .png" # debug
 
         # try to get exit/quit key
         if re.search(r"(?:^| |\n|-)(?:exit|quit)(?:|\n|$)", input_string, re.IGNORECASE):
