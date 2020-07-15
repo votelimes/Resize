@@ -122,8 +122,12 @@ class Resizer:
     def __resize_images(self, image_path, image_resolution, new_folder):
 
         if new_folder:
-            image_path = str(re.findall(r"[\/\\:][\w\s.,;#@\'\"]+(?:\.[\w]+)?(?:$| )",image_path, re.IGNORECASE))
-            pass # in progress
+            image_name = str(re.findall(r"[\/\\:][\w\s.,;#@\'\"]+(?:\.[\w]+)?(?:$| )", image_path, re.IGNORECASE))
+            image_name = image_name.strip()
+            if new_folder[-1] is '\\' or new_folder is '\/':
+                image_path = new_folder + image_name
+            else:
+                image_path = new_folder + re.search(r"[\\\/]", new_folder).group(0) + image_name
 
         image = Image.open(image_path)
         image = image.resize(image_resolution, Image.ANTIALIAS)
