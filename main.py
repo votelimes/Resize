@@ -33,7 +33,7 @@ class Resizer:
         else:
             separator = " "
             input_string = separator.join(sys.argv[1:])
-        #input_string = "r:/folder1/test4.jpg -r 100 200 -nl r:/folder1/folder2 -p new" # debug
+        #input_string = "r:\folder1 -r 100 100 -nl r:\folder1\folder2" # debug
 
         # try to get exit/quit key
         if re.search(r"(?:^| |\n|-)(?:exit|quit)(?:|\n|$)", input_string, re.IGNORECASE):
@@ -66,18 +66,18 @@ class Resizer:
             # delete -p key from input_string
             input_string = re.sub(p_pattern, "", input_string, re.IGNORECASE)
 
-            # get -nl (resized images new location) key from input
-            nf_pattern = r"-nl ?(?:[a-zA-Z]:)?(?:[\\/]?[\w _-]+)*(?:\n| |$|\Z|\|)"
-            nf_data = re.findall(nf_pattern, input_string, re.IGNORECASE)
-            # get -nl value if it exists
-            if nf_data:
-                if nf_data[0][len(nf_data[0]) - 1] is '-':
-                    nf_data[0] = nf_data[0][:len(nf_data)-2]
-                self.__new_folder = nf_data[0][3:]
-                self.__new_folder = self.__new_folder.strip()
+        # get -nl (resized images new location) key from input
+        nl_pattern = r"-nl ?(?:[a-zA-Z]:)?(?:[\\\/]+[\w _-]+)*"
+        nl_data = re.findall(nl_pattern, input_string, re.IGNORECASE)
+        # get -nl value if it exists
+        if nl_data:
+            if nl_data[0][len(nl_data[0]) - 1] is '-':
+                nl_data[0] = nl_data[0][:len(nl_data)-2]
+            self.__new_folder = nl_data[0][3:]
+            self.__new_folder = self.__new_folder.strip()
 
-                # delete -nl key from input_string
-                input_string = re.sub(nf_pattern, "", input_string, re.IGNORECASE)
+            # delete -nl key from input_string
+            input_string = re.sub(nl_pattern, "", input_string, re.IGNORECASE)
 
         pattern = r"(?:[a-zA-Z]:[\\\/])?(?:[\\\/]?[\w -_]+)*(?:\.(?:{0}))?(?:\n| |$|\Z|\|)"
         pattern = pattern.format(self.__acceptable_file_extensions)
@@ -111,6 +111,7 @@ class Resizer:
             if log is not 0:
                 return log
         # debug
+        # input()
         return 0
 
     def start_console_listen(self, infinite=True):
@@ -162,7 +163,7 @@ class Resizer:
             new_pathname_end = self.__postfix + image_extension
         else:
             new_pathname_end = "_" + str(self.__final_resolution[0]) + \
-                               "x" + str(self.__final_resolution[1]) + \
+                               " x" + str(self.__final_resolution[1]) + \
                                image_extension
 
         new_image_path = re.sub(pattern, new_pathname_end, image_path, re.IGNORECASE)
@@ -195,8 +196,8 @@ class Resizer:
         return 0
 
     @staticmethod
-    def __print_help(self):
-        print("""Use: path(one or more) [-r [dec] [dec]] 
+    def __print_help():
+        print("""Use: path(one or more) [options (-r is required)] 
         Input files or folders with files one-by-one with space or comma separate. 
         use 'help' key to open this reference.
         use 'quit' or 'exit' ket to close this program.
