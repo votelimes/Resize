@@ -10,7 +10,8 @@ import sys
 class Resizer:
     def __init__(self):
         self.__errors_list = {"error_1": "The path to the file / folder is specified incorrectly.",
-                              "error_2": "Error 2. Final resolution must be entered.",
+                              "error_2": "Final resolution must be entered.",
+                              "error_3": "Unable to create new folder."
                               }
         self.__images_folders_paths = []
         self.__images_objects_paths = []
@@ -28,11 +29,11 @@ class Resizer:
         self.__new_folder = None
         if len(sys.argv) == 1:
             input_string = input(": ")
-            pass # debug
+            #pass  # debug
         else:
             separator = " "
             input_string = separator.join(sys.argv[1:])
-        #input_string = "r://test1.txt -r 100 200 -nf r://folder2 -p .png" # debug
+        #input_string = "r:/folder1/test4.jpg -r 100 200 -nl r:/folder1/folder2 -p new" # debug
 
         # try to get exit/quit key
         if re.search(r"(?:^| |\n|-)(?:exit|quit)(?:|\n|$)", input_string, re.IGNORECASE):
@@ -41,18 +42,19 @@ class Resizer:
         # try to get help key
         if re.search(r"(?:^| |\n|-)(?:help|\?)(?:|\n|$)", input_string, re.IGNORECASE):
             self.__print_help()
-            return 0
+            return 1
 
         # get -r (resolution) key from input
-        ir_pattern = r"-r \d+ ?\D ?\d+"
-        ir_data = re.findall(ir_pattern, input_string, re.IGNORECASE)
-        if not ir_data:
-            return "error_2"
+        r_pattern = r"-r \d+ ?\D ?\d+"
+        r_data = re.findall(r_pattern, input_string, re.IGNORECASE)
+        if not r_data:
+            print(self.__errors_list["error_2"])
+            return -1
         # get -r values
-        self.__final_resolution = tuple(map(int, re.findall(r"\d+", ir_data[0], re.IGNORECASE)))
+        self.__final_resolution = tuple(map(int, re.findall(r"\d+", r_data[0], re.IGNORECASE)))
 
         # delete -r key from input_string
-        input_string = re.sub(ir_pattern, "", input_string, re.IGNORECASE)
+        input_string = re.sub(r_pattern, "", input_string, re.IGNORECASE)
 
         # get -p (postfix) key from input
         p_pattern = r"-p ?.*(?:$| )"
@@ -65,15 +67,15 @@ class Resizer:
             input_string = re.sub(p_pattern, "", input_string, re.IGNORECASE)
 
             # get -nl (resized images new location) key from input
-            nf_pattern = r"-nl ?(?:[a-zA-Z]:[\\\/])?(?:[\\\/]?[\w _-]+)*(?:\n| |$|\Z|\|\s|-)"
-            nf_data = re.findall(nf_pattern, input_string)
+            nf_pattern = r"-nl ?(?:[a-zA-Z]:)?(?:[\\/]?[\w _-]+)*(?:\n| |$|\Z|\|)"
+            nf_data = re.findall(nf_pattern, input_string, re.IGNORECASE)
             # get -nl value if it exists
             if nf_data:
                 if nf_data[0][len(nf_data[0]) - 1] is '-':
                     nf_data[0] = nf_data[0][:len(nf_data)-2]
                 self.__new_folder = nf_data[0][3:]
                 self.__new_folder = self.__new_folder.strip()
-                print(self.__new_folder)
+
                 # delete -nl key from input_string
                 input_string = re.sub(nf_pattern, "", input_string, re.IGNORECASE)
 
@@ -99,38 +101,57 @@ class Resizer:
 
         # process all images
         for x in self.__images_objects_paths:
-            self.__resize_images(x, self.__final_resolution, self.__new_folder)
+            log = self.__resize_images(x, self.__final_resolution, self.__new_folder)
+            if log is not 0:
+                return log
 
         # process all folders
         for x in self.__images_folders_paths:
-            self.__resize_folders_images(x, self.__final_resolution)
-
+            log = self.__resize_folders_images(x, self.__final_resolution)
+            if log is not 0:
+                return log
         # debug
-        # input()
+        return 0
 
     def start_console_listen(self, infinite=True):
         while True:
+
             log = self.__console()
-            if log is not 0:
+            if log is -1:
                 try:
                     print(self.__errors_list[log])
                 except IndexError:
                     print("Unknown error. Try again.")
+
+            elif log is not 0 and log is not 1:
+                print(log)
+
             if not infinite:
                 break
 
     def __resize_images(self, image_path, image_resolution, new_folder):
 
+        try:
+            image = Image.open(image_path)
+        except IOError as e:
+            print(type(e))
+            return e
+        image = image.resize(image_resolution, Image.ANTIALIAS)
+
         if new_folder:
-            image_name = str(re.findall(r"[\/\\:][\w\s.,;#@\'\"]+(?:\.[\w]+)?(?:$| )", image_path, re.IGNORECASE))
+            if not os.path.exists(self.__new_folder):
+                try:
+                    os.mkdir(self.__new_folder)
+                except OSError as e:
+                    return e
+
+            pattern = r"[\\/][\w\s.,;#@'\"]+(?:\.\w+)?(?:$| )"
+            image_name = re.findall(pattern, image_path, re.IGNORECASE)[0]
             image_name = image_name.strip()
-            if new_folder[-1] is '\\' or new_folder is '\/':
+            if new_folder[-1] is '\\' or new_folder[-1] is '/' or image_name[0] is '\\' or image_name[0] is '/':
                 image_path = new_folder + image_name
             else:
                 image_path = new_folder + re.search(r"[\\\/]", new_folder).group(0) + image_name
-
-        image = Image.open(image_path)
-        image = image.resize(image_resolution, Image.ANTIALIAS)
 
         pattern = r".(?:{0})$"
         pattern = pattern.format(self.__acceptable_file_extensions)
@@ -147,9 +168,16 @@ class Resizer:
         new_image_path = re.sub(pattern, new_pathname_end, image_path, re.IGNORECASE)
 
         if self.__fm is not False:
-            image.save(new_image_path, image_extension[1:])
+            try:
+                image.save(new_image_path, image_extension[1:])
+            except IOError as e:
+                return e
         elif self.__fm is False:
-            image.save(new_image_path)
+            try:
+                image.save(new_image_path)
+            except IOError as e:
+                return e
+        return 0
 
     def __resize_folders_images(self, folder_path, image_resolution):
 
@@ -161,7 +189,9 @@ class Resizer:
             if re.search(pattern, file):
                 images.append(os.path.join(folder_path, file))
         for image in images:
-            self.__resize_images(image, self.__final_resolution, self.__new_folder)
+            log = self.__resize_images(image, self.__final_resolution, self.__new_folder)
+            if log is not 0:
+                return log
         return 0
 
     @staticmethod
@@ -170,7 +200,7 @@ class Resizer:
         Input files or folders with files one-by-one with space or comma separate. 
         use 'help' key to open this reference.
         use 'quit' or 'exit' ket to close this program.
-        use '-r' key for setting new resolution.
+        use '-r' key for setting new (final) resolution.
         use '-k' key to set postfix for resized images.
         use '-nl' key to set new location for resized images.
         """)
