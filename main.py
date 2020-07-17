@@ -20,20 +20,14 @@ class Resizer:
         self.__new_folder = None
         self.__acceptable_file_extensions = "jpeg|jpg|png|txt|gif|bmp|tiff|exif|bat|webp"
 
-        # Input parameters flags
-        self.__fm = False  # format key flag
-
     def __console(self):
-        self.__fm = False
         self.__postfix = None
         self.__new_folder = None
         if len(sys.argv) == 1:
             input_string = input(": ")
-            #pass  # debug
         else:
             separator = " "
             input_string = separator.join(sys.argv[1:])
-        #input_string = "r:\folder1 -r 100 100 -nl r:\folder1\folder2" # debug
 
         # try to get exit/quit key
         if re.search(r"(?:^| |\n|-)(?:exit|quit)(?:|\n|$)", input_string, re.IGNORECASE):
@@ -67,7 +61,7 @@ class Resizer:
             input_string = re.sub(p_pattern, "", input_string, re.IGNORECASE)
 
         # get -nl (resized images new location) key from input
-        nl_pattern = r"-nl ?(?:[a-zA-Z]:)?(?:[\\\/]+[\w _-]+)*"
+        nl_pattern = r"-nl ?(?:[a-zA-Z]:)?(?:[\\/]+[\w _-]+)*"
         nl_data = re.findall(nl_pattern, input_string, re.IGNORECASE)
         # get -nl value if it exists
         if nl_data:
@@ -79,7 +73,7 @@ class Resizer:
             # delete -nl key from input_string
             input_string = re.sub(nl_pattern, "", input_string, re.IGNORECASE)
 
-        pattern = r"(?:[a-zA-Z]:[\\\/])?(?:[\\\/]?[\w -_]+)*(?:\.(?:{0}))?(?:\n| |$|\Z|\|)"
+        pattern = r"(?:[a-zA-Z]:[\\/])?(?:[\\/]?[\w -_]+)*(?:\.(?:{0}))?(?:\n| |$|\Z|\|)"
         pattern = pattern.format(self.__acceptable_file_extensions)
 
         input_data = re.findall(pattern, input_string, re.IGNORECASE)
@@ -152,7 +146,7 @@ class Resizer:
             if new_folder[-1] is '\\' or new_folder[-1] is '/' or image_name[0] is '\\' or image_name[0] is '/':
                 image_path = new_folder + image_name
             else:
-                image_path = new_folder + re.search(r"[\\\/]", new_folder).group(0) + image_name
+                image_path = new_folder + re.search(r"[\\/]", new_folder).group(0) + image_name
 
         pattern = r".(?:{0})$"
         pattern = pattern.format(self.__acceptable_file_extensions)
@@ -160,7 +154,10 @@ class Resizer:
 
         new_pathname_end = ""
         if self.__postfix:
-            new_pathname_end = self.__postfix + image_extension
+            if re.search(pattern, self.__postfix, re.IGNORECASE):
+                new_pathname_end = self.__postfix
+            else:
+                new_pathname_end = self.__postfix + image_extension
         else:
             new_pathname_end = "_" + str(self.__final_resolution[0]) + \
                                " x" + str(self.__final_resolution[1]) + \
@@ -168,16 +165,11 @@ class Resizer:
 
         new_image_path = re.sub(pattern, new_pathname_end, image_path, re.IGNORECASE)
 
-        if self.__fm is not False:
-            try:
-                image.save(new_image_path, image_extension[1:])
-            except IOError as e:
-                return e
-        elif self.__fm is False:
-            try:
-                image.save(new_image_path)
-            except IOError as e:
-                return e
+        try:
+            image.save(new_image_path)
+        except IOError as e:
+            return e
+
         return 0
 
     def __resize_folders_images(self, folder_path, image_resolution):
@@ -197,12 +189,12 @@ class Resizer:
 
     @staticmethod
     def __print_help():
-        print("""Use: path(one or more) [options (-r is required)] 
+        print("""Use: path(one or more) [options (-r is always required)] 
         Input files or folders with files one-by-one with space or comma separate. 
         use 'help' key to open this reference.
-        use 'quit' or 'exit' ket to close this program.
+        use 'quit' or 'exit' key to close this program.
         use '-r' key for setting new (final) resolution.
-        use '-k' key to set postfix for resized images.
+        use '-p' key to set postfix for resized images. It also works if you need to change image extension.
         use '-nl' key to set new location for resized images.
         """)
 
