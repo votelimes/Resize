@@ -1,1 +1,9 @@
 A simple application that help you to resize just an image or even a full folder with images.
+
+Use: path(one or more) [options (-r is always required)] 
+        Input files or folders with files one-by-one with space or comma separate. 
+        use 'help' key to open this reference.
+        use 'quit' or 'exit' key to close this program.
+        use '-r' key for setting new (final) resolution.
+        use '-p' key to set postfix for resized images. It also works if you need to change image extension.
+        use '-nl' key to set new location for resized images.
